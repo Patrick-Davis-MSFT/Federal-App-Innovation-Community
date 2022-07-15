@@ -1,19 +1,15 @@
 # Remote Debugging with an ASP.NET Core API on a Container in Docker and AKS
-This example demonstrates how to debug a ASP.NET Core API deployed to an App Service. This tutorial is intended to demonstrate a useful developer tool utilizing Azure App Services and enable developers to do more and remove roadblocks with existing tools. 
+This example demonstrates how to debug a ASP.NET Core API deployed to a container on AKS and Docker. This tutorial is intended to demonstrate a useful developer tool utilizing AKS and enable developers to do more and remove roadblocks with existing tools. 
 
 ## Prerequisites  
 
-* Powershell
+* Powershell 7.2.5 or latest stable
 * Azure Command Line (az)
 * Bicep Command Line (bicep)
 * An Azure subscription with contributor rights for a resource group
-* Visual Studio 2017 or later with the "ASP.NET and web development" and "Azure Development" Extensions installed. 
+* Visual Studio *Enterprise* 2019 or later with the "ASP.NET and web development" and "Azure Development" Extensions installed. 
 * Docker Desktop
 * Local Kubectl 
-
-> <b><i>Tested with Visual Studio 2022</i></b>
->  
-> <b>Note</b>: When using earlier version use the cloud explorer to connect to the remote debugging. The cloud explorer was retired for Visual Studio 2022. 
 
 ### Upgrade all local tools
 * Upgrade the bicep version (Tested with 0.4.1272)
@@ -27,21 +23,19 @@ This example demonstrates how to debug a ASP.NET Core API deployed to an App Ser
 * Upgrade kubectl (Tested with 1.24.0)
 
 ### Components
-* ./infrastructure/ - The bicep code for the App Service
+* ./infrastructure/ - The bicep code for AKS and Azure Container Registry
 * ./Source/DebugAPI/ - The Visual Studio Project
 * ./Source/DeployFolder/ - The target folder for deployment
 * ./Source/DeployThis/ - The folder with default container for debugging
 
-## Connectivity
-Remote Debugging requires connectivity over ports <b>4026, 4024, and 4022</b> to the App Service from the instance of Visual Studio connecting to it. Visual Studio web publishing requires port <b>8172</b>. This is in addition to the standard ports for App Services (<b>80 and 443</b>). Building the apps service on a private network could prevent communication over these ports. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
+## Connectivity and Modules
+#VERIFY THAT YOU NEED THE PORTS
+Remote Debugging requires connectivity over ports <b>4026, 4024, and 4022</b> to the container from the instance of Visual Studio connecting to it. Visual Studio web publishing requires port <b>8172</b>. This is in addition to the standard ports for container (<b>80 and 443</b>). Building the apps service on a private network could prevent communication over these ports. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
 
-This example uses an open ASP.NET Core API App Service. There are no network protections in this example. In this example the dockerfile exposes all the necessary debug ports
+This example uses an open ASP.NET Core API container. There are no network protections in this example. In this example the dockerfile and deployment specification exposes all the necessary debug ports
 
 ## Setup 
-The Automatic Set up will only deploy 
-Click here to set up the custer automatically.
-
-Once Created skip to [here][1]
+An Azure Kubernetes Cluster Service (AKS) and a Azure Container Registry (ACR). To reduce cost the AKS instance can be stopped when not in use to reduce cost.
 
 ### Manual
 
@@ -75,7 +69,6 @@ Once Created skip to [here][1]
         az acr login --name [Azure Container Registry Name]
         ```
     1. Create the local docker image (if necessary)
-        
         ```[ps]
         docker build -f .\Source\DebugWebAPI\DebugWebAPI\Dockerfile -t debugwebapilocal .\Source\DebugWebAPI\
         ```
@@ -90,10 +83,11 @@ Once Created skip to [here][1]
         > __Note:__
         > Once a container is pushed to the Azure Container Registry you could pull and run the container from the Azure container registry rather than pulling and pushing from your local client.
 1. Deploy as a Pod to AKS and check access
+    > No Namespaces are used in this creation. All pods are created in the default namespace
     1. Connect to your AKS cluster
         1. Go to the Azure Portal
         1. Browse to your AKS Cluster
-        1. Click Connect. Note the first two commands
+        1. Click Connect. **Note** the first two commands
         1. In a local PowerShell Login to Azure CLI
             ```[ps]
             az login
@@ -102,11 +96,21 @@ Once Created skip to [here][1]
             ```[ps]
             az account set --subscription [Subscription ID]
             ```
-        1. Connect to the AKS Cluster. The secondcommand from the connect sidebar in the portal.
+        1. Connect to the AKS Cluster. The second command from the connect sidebar in the portal.
             ```[ps]
             az aks get-credentials --resource-group [Resource Group Name] --name [AKS Cluster Name]
             ```
-
+        1. Update the `deployment.yaml` with the name of the Azure Container Registry. This will be on line ~17
+        1. Create the deployment on the cluster
+            ```[ps]
+            kubectl apply -f ".\Source\DeployThis\deployment.yaml"
+            ```
+        1. Get the External IP address of the service. **Note** the EXTERNAL-IP Address
+            ```[ps]
+            kubectl get service
+            ```
+        1. Test to make sure the system is working by browsing to the site http://[EXTERNAL-IP]/swagger
+        
 ## Remote Debugging
 Remote debugging requires the debugging symbols to be deployed to the remote target. This is done by building and deploying the project in the "Debug" configuration. The instructions below publish and deploy from Visual Studio.
 
@@ -114,41 +118,36 @@ Remote debugging requires the debugging symbols to be deployed to the remote tar
 > 
 > * Configuration for CI/CD will need to be changed in the build pipeline of your chosen CI/CD tool (Azure DevOps, GitHub, etc.).
 >
-> * The deployment and publishing settings are not included with this project. You will need to create a new deployment if you wish to make code changes for your own experimentation. 
+> * The deployment and configuration settings included with this project. 
+> * The same Code must be deployed to the AKS cluster as what is running on the local 
 
-1. Enable Remote Debugging. <i>Note: the application will restart at the end of this process.</i>
-    In the Azure Portal:
-    1. Go to the App Service resource
-    1. Click on Configuration in the left hand menu
-    1. Select "General Settings"
-    1. Select "On" Under "Remote Debugging"
-    1. Select your version of Visual Studio
-    1. Click "Save" and "Continue" to save the settings and restart the App Service
-1. Debugging remotely requires the solution be deployed from a "<i>Debug</i>" configuration. This was done earlier however may require a redeployment for remote debugging in your own App Service. To configure this setting on your own project...
-    1. Right Click on the Project
-    1. Select "Publish"
-    1. If you have a publish configuration select look for configuration and click the edit button. 
-    1. On the configuration screen select "Debug". The default is normally "Release" however this will strip all Debugging symbols and prevent the debugger from attaching. 
-    1. Publish the App through the common means.
-1. Attach the Visual Studio Debugger in 2022. 
-    For earlier versions of Visual Studio use the Cloud Explorer (under the view menu) instead of the Connected Services
-    In Visual Studio 2022
-    1. Go to Connected Services in the Solution Explorer.
-    1. Right Click and select "Managed Service Connections".
-    1. Click "Add a Service Dependency".
-    1. Login if necessary.
-    1. Select the appropriate App Service and Click Select then Close.
-    1. On the menu (three dots) to the right of the service open the menu. 
-    1. Select Attach Debugger. This operation could take a while.
-    1. Place a breakpoint in the WeatherForecastController.cs to view the code during execution. 
+### Debugging from a local Docker Desktop run
+1. Enable docker on the project
+1. Ensure that the docker file can be executed from the solution directory
+1. Debug the program though the docker debug button
+    ![docker debug button](./Files/dockerdebug.png)
+1. The debugger will run as if it is hosted through IIS express with the ability to step through code
 
-1. Once complete with the debugging disable the remote debugging on the app service. <i>Note: the application will restart at the end of this process.</i>
-    In the Azure Portal:
-    1. Go to the App Service resource
-    1. Click on Configuration in the left hand menu
-    1. Select "General Settings"
-    1. Select "Off" Under "Remote Debugging"
-    1. Click "Save" and "Continue" to save the settings and restart the App Service
+### Debugging from the AKS cluster
+Note the ports in the deployment file are open and available. 
+1. With AKS and the Service Running, Go to Visual Studio Enterprise and choose Debug -> "Attach Snapshot Debugger" 
+    ![snapshot debugger](./Files/snapshotdebugger.png)
+    1. Choose the following options
+        1. In the Azure resource choose the AKS Cluster, 
+        1. In the Azure Storage account choose the storage account created with the bicep file earlier. 
+    1. Click Attach to enter Snapshot Debugging mode
+    1. Wait for all the modules to load (about 45 seconds). The Module window is found under Debug -> Windows
+1. Set a Snapshot Point
+    1. Open the Code and Set a Snapshot Point like you would a breakpoint, Suggested line 25 to inspect the GUID 
+    1. Click Start Collection (Adding a new snapshot location will require you to "Update Collection" using the same button)
+        > *Note*: The Start Collection button will be grayed out until all modules are loaded
+        ![Start Collection](./Files/startcollection.png)
+        ![Update Collection](./Files/updatecollection.png)
+    1. Call the Web API through the Swagger page displayed in the setup. 
+    1. Click/View on the Snapshot that was created
+        ![snapshot window](./Files/Snapshots.png)
+    1. View the runtime values of the local variable
+        ![Code Line View](./Files/codelineSnapshot.png)
 
 ## Clean Up
 
@@ -163,3 +162,7 @@ docker stop debugwebapiimage
 docker rm debugwebapiimage 
 docker rmi debugwebapilocal 
 ```
+
+## References
+* [dockerfiles for the profilier](https://github.com/Microsoft/vssnapshotdebugger-docker)
+* [Snapshot Debugger walkthrough](https://github.com/MicrosoftDocs/visualstudio-docs/blob/10bae0fd2b2a58893d28aa1380141046704696ed/docs/debugger/debug-live-azure-kubernetes.md)

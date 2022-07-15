@@ -3,6 +3,8 @@ targetScope = 'resourceGroup'
 @description('The name of the Managed Cluster resource.')
 param resourceName string = 'AKS-MC-${uniqueString(resourceGroup().id)}'
 
+param storageName string = 'storage${uniqueString(resourceGroup().id)}'
+
 @description('The location of AKS resource.')
 param location string = resourceGroup().location
 
@@ -89,7 +91,7 @@ resource resourceName_resource 'Microsoft.ContainerService/managedClusters@2021-
       {
         name: 'agentpool'
         osDiskSizeGB: osDiskSizeGB
-        count: 3
+        count: 1
         enableAutoScaling: true
         minCount: 1
         maxCount: 5
@@ -127,4 +129,14 @@ resource resourceName_resource 'Microsoft.ContainerService/managedClusters@2021-
   dependsOn: []
 }
 
+resource createStorage 'Microsoft.Storage/storageAccounts@2021-06-01' = {
+  name: storageName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+}
+
 output controlPlaneFQDN string = resourceName_resource.properties.fqdn
+output storageAcctName string = createStorage.name
