@@ -31,13 +31,12 @@ This example demonstrates how to debug a ASP.NET Core API deployed to a containe
 ### Components
 * ./infrastructure/ - The bicep code for AKS and Azure Container Registry
 * ./Source/DebugAPI/ - The Visual Studio Project
-* ./Source/DeployFolder/ - The target folder for deployment
 * ./Source/DeployThis/ - The folder with default deployment for debugging
 
 ## Connectivity and Modules
 Remote Debugging requires connectivity over ports <b>for VS 2022 4026 and for VS 2019 4024</b> to the container from the instance of Visual Studio connecting to it. These ports are opened by snapshot module. This is in addition to the standard ports for container (<b>80 and 443</b>). In addition, running the container on a private network could prevent communication over these ports. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
 
-To create snapshots, the contianer module must be included in the docker file to send snapshots to the appropriate storage account. In this example this module is included for you in the Dockerfile on lines ~4 - ~33. Other [snapshot tools for other .NET versions are located at this link](https://github.com/Microsoft/vssnapshotdebugger-docker). The storage account for the snapshot must be contained within the same location as the AKS Cluster. You must also have permissions to create and manage containers on that storage account. This can be created via Visual Studio or the include bicep file. 
+To create snapshots, the container module must be included in the docker file to send snapshots to the appropriate storage account. In this example this module is included for you in the Dockerfile on lines ~4 - ~33. Other [snapshot tools for other .NET versions are located at this link](https://github.com/Microsoft/vssnapshotdebugger-docker). The storage account for the snapshot must be contained within the same location as the AKS Cluster. You must also have permissions to create and manage containers on that storage account. This can be created via Visual Studio or the include bicep file. 
 
 This example uses an open ASP.NET Core API container. There are no network protections in this example. In this example the dockerfile and deployment specification exposes all the necessary debug ports and includes the necessary modules.
 
@@ -143,7 +142,7 @@ Note the ports in the deployment file are open and available.
         1. In the Azure resource choose the AKS Cluster, 
         1. In the Azure Storage account choose the storage account created with the bicep file earlier. 
     1. Click Attach to enter Snapshot Debugging mode
-    1. Wait for all the modules to load (about 45 seconds). The Module window is found under Debug -> Windows -> Modules
+    1. Wait for all the modules to load (about 45 seconds). The Module window is found under Debug -> Windows -> Modules. The Start Collection button will not enable until these are loaded.
 1. Set a Snapshot Point
     1. Open the Code and Set a Snapshot Point like you would a breakpoint, Suggested line ~25 to inspect the GUID printed to the console 
     1. Click Start Collection 
