@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: debugwebapi
-          image: acrpa53lofav5dlo.azurecr.io/debugwebapiaks:latest
+          image: [ACR_NAME].azurecr.io/debugwebapiaks:latest
           resources:
             limits:
               memory: 2058Mi
