@@ -11,7 +11,7 @@ This example demonstrates how to debug a ASP.NET Core API deployed to a containe
 * Powershell 7.2.5 or latest stable
 * Azure Command Line (az)
 * Bicep Command Line (bicep)
-* An Azure subscription with contributor rights for a resource group
+* An Azure subscription with contributor rights for a resource group and permissions to create a new resource group during the AKS creation.
 * Docker Desktop
 * Local Kubectl 
 * Visual Studio *Enterprise* 2019 or later with the "ASP.NET and web development" and "Azure Development" Extensions installed. 
@@ -42,7 +42,7 @@ To create snapshots, the contianer module must be included in the docker file to
 This example uses an open ASP.NET Core API container. There are no network protections in this example. In this example the dockerfile and deployment specification exposes all the necessary debug ports and includes the necessary modules.
 
 ## Setup 
-An Azure Kubernetes Cluster Service (AKS) and a Azure Container Registry (ACR). To reduce cost the AKS instance can be stopped when not in use to reduce cost.
+An Azure Kubernetes Cluster Service (AKS), an Azure Container Registry (ACR) and Azure Storage account are created in this tutorial. To reduce cost the AKS instance can be stopped when not in use to reduce cost.
 
 ### Manual
 
@@ -119,14 +119,14 @@ An Azure Kubernetes Cluster Service (AKS) and a Azure Container Registry (ACR). 
         1. Test to make sure the system is working by browsing to the site http://[EXTERNAL-IP]/swagger
         
 ## Remote Debugging
-Remote debugging requires the debugging symbols to be deployed to the remote target. This is done by building and deploying the project in the "Debug" configuration. The instructions below publish and deploy from Visual Studio.
+Remote debugging requires the debugging symbols to be deployed to the remote target. Sometimes these are removed to reduce package sizes. These need to be added back in to enable debugging.
 
 > <b>Notes:</b> 
 > 
 > * Configuration for CI/CD will need to be changed in the build pipeline of your chosen CI/CD tool (Azure DevOps, GitHub, etc.).
 >
 > * The deployment and configuration settings included with this project. 
-> * The same Code must be deployed to the AKS cluster as what is running on the local 
+> * The same Code must be deployed to the AKS cluster as what is running on the local. Any changes will prevent Snapshot from mounting until the newer code is deployed. 
 
 ### Debugging from a local Docker Desktop run
 1. Enable docker on the project
@@ -137,20 +137,20 @@ Remote debugging requires the debugging symbols to be deployed to the remote tar
 
 ### Debugging from the AKS cluster
 Note the ports in the deployment file are open and available. 
-1. With AKS and the Service Running, Go to Visual Studio Enterprise and choose Debug -> "Attach Snapshot Debugger" 
+1. With AKS and the Pod properly Running, Go to Visual Studio Enterprise and choose Debug -> "Attach Snapshot Debugger" 
     ![snapshot debugger](./Files/snapshotdebugger.png)
     1. Choose the following options
         1. In the Azure resource choose the AKS Cluster, 
         1. In the Azure Storage account choose the storage account created with the bicep file earlier. 
     1. Click Attach to enter Snapshot Debugging mode
-    1. Wait for all the modules to load (about 45 seconds). The Module window is found under Debug -> Windows
+    1. Wait for all the modules to load (about 45 seconds). The Module window is found under Debug -> Windows -> Modules
 1. Set a Snapshot Point
     1. Open the Code and Set a Snapshot Point like you would a breakpoint, Suggested line ~25 to inspect the GUID printed to the console 
     1. Click Start Collection 
         > *Note*: The Start Collection button will be grayed out until all modules are loaded
         > ![Start Collection](./Files/startcollection.png)
 
-        > Adding a new snapshot location will require you to "Update Collection" using the same button
+        > Adding or Removing a snapshot will require you to "Update Collection" using the same button
         >![Update Collection](./Files/updatecollection.png)
     1. Call the Web API through the Swagger page viewed on the AKS Cluster in the setup. 
     1. Click/View on the Snapshot that was created
