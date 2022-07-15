@@ -1,15 +1,21 @@
 # Remote Debugging with an ASP.NET Core API on a Container in Docker and AKS
 This example demonstrates how to debug a ASP.NET Core API deployed to a container on AKS and Docker. This tutorial is intended to demonstrate a useful developer tool utilizing AKS and enable developers to do more and remove roadblocks with existing tools. 
 
+## Terms
+* AKS - [Azure Kubernetes Service](https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes)
+* ACR - [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry)
+* VS - Visual Studio *Enterprise*
+
 ## Prerequisites  
 
 * Powershell 7.2.5 or latest stable
 * Azure Command Line (az)
 * Bicep Command Line (bicep)
 * An Azure subscription with contributor rights for a resource group
-* Visual Studio *Enterprise* 2019 or later with the "ASP.NET and web development" and "Azure Development" Extensions installed. 
 * Docker Desktop
 * Local Kubectl 
+* Visual Studio *Enterprise* 2019 or later with the "ASP.NET and web development" and "Azure Development" Extensions installed. 
+    > ***The Enterprise level license is required.***
 
 ### Upgrade all local tools
 * Upgrade the bicep version (Tested with 0.4.1272)
@@ -26,11 +32,12 @@ This example demonstrates how to debug a ASP.NET Core API deployed to a containe
 * ./infrastructure/ - The bicep code for AKS and Azure Container Registry
 * ./Source/DebugAPI/ - The Visual Studio Project
 * ./Source/DeployFolder/ - The target folder for deployment
-* ./Source/DeployThis/ - The folder with default container for debugging
+* ./Source/DeployThis/ - The folder with default deployment for debugging
 
 ## Connectivity and Modules
-#VERIFY THAT YOU NEED THE PORTS
-Remote Debugging requires connectivity over ports <b>4026, 4024, and 4022</b> to the container from the instance of Visual Studio connecting to it. Visual Studio web publishing requires port <b>8172</b>. This is in addition to the standard ports for container (<b>80 and 443</b>). Building the apps service on a private network could prevent communication over these ports. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
+Remote Debugging requires connectivity over ports <b>for VS 2022 4026 and for VS 2019 4024</b> to the container from the instance of Visual Studio connecting to it. This is in addition to the standard ports for container (<b>80 and 443</b>). In addition, running the container on a private network could prevent communication over these ports. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
+
+To connect Visual Studio to the AKS cluster you must have network connectivity and the contianer module to send snapshots to the appropriate storage account. In this example this module is included for you in the Dockerfile on lines ~4 - ~33. Other [snapshot tools for other .NET versions are located at this link](https://github.com/Microsoft/vssnapshotdebugger-docker). The storage account for the snapshot must be contained within the same location as the AKS Cluster. You must also have permissions to create and manage containers on that storage account. This can be created via Visual Studio or the include bicep file. 
 
 This example uses an open ASP.NET Core API container. There are no network protections in this example. In this example the dockerfile and deployment specification exposes all the necessary debug ports
 
@@ -40,7 +47,7 @@ An Azure Kubernetes Cluster Service (AKS) and a Azure Container Registry (ACR). 
 ### Manual
 
 1. Create a resource group for deployment. This name will be reused in the next several steps.
-1. Download this repository.
+1. Download this registry.
 1. Open a Powershell command line to this repo folder.
 1. On the command line login to Azure
         `az login`
@@ -138,12 +145,14 @@ Note the ports in the deployment file are open and available.
     1. Click Attach to enter Snapshot Debugging mode
     1. Wait for all the modules to load (about 45 seconds). The Module window is found under Debug -> Windows
 1. Set a Snapshot Point
-    1. Open the Code and Set a Snapshot Point like you would a breakpoint, Suggested line 25 to inspect the GUID 
-    1. Click Start Collection (Adding a new snapshot location will require you to "Update Collection" using the same button)
+    1. Open the Code and Set a Snapshot Point like you would a breakpoint, Suggested line ~25 to inspect the GUID printed to the console 
+    1. Click Start Collection 
         > *Note*: The Start Collection button will be grayed out until all modules are loaded
-        ![Start Collection](./Files/startcollection.png)
-        ![Update Collection](./Files/updatecollection.png)
-    1. Call the Web API through the Swagger page displayed in the setup. 
+        > ![Start Collection](./Files/startcollection.png)
+
+        > Adding a new snapshot location will require you to "Update Collection" using the same button
+        >![Update Collection](./Files/updatecollection.png)
+    1. Call the Web API through the Swagger page viewed on the AKS Cluster in the setup. 
     1. Click/View on the Snapshot that was created
         ![snapshot window](./Files/Snapshots.png)
     1. View the runtime values of the local variable
@@ -166,3 +175,5 @@ docker rmi debugwebapilocal
 ## References
 * [dockerfiles for the profilier](https://github.com/Microsoft/vssnapshotdebugger-docker)
 * [Snapshot Debugger walkthrough](https://github.com/MicrosoftDocs/visualstudio-docs/blob/10bae0fd2b2a58893d28aa1380141046704696ed/docs/debugger/debug-live-azure-kubernetes.md)
+* [Snapshot Debugger](https://aka.ms/snappoint)
+* [Snapshot Required Ports](https://docs.microsoft.com/en-us/visualstudio/debugger/remote-debugger-port-assignments)
