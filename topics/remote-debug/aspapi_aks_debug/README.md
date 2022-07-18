@@ -4,7 +4,7 @@ This example demonstrates how to debug a ASP.NET Core API deployed to a containe
 ## Terms
 * AKS - [Azure Kubernetes Service](https://docs.microsoft.com/en-us/azure/aks/intro-kubernetes)
 * ACR - [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry)
-* VS - Visual Studio *Enterprise*
+* VS - Visual Studio *Enterprise* - Visual Studio Enterprise 2022 was used for creating this guide.
 
 ## Prerequisites  
 
@@ -34,16 +34,14 @@ This example demonstrates how to debug a ASP.NET Core API deployed to a containe
 * ./Source/DeployThis/ - The folder with default deployment for debugging
 
 ## Connectivity and Modules
-Remote Debugging requires connectivity over ports <b>for VS 2022 4026 and for VS 2019 4024</b> to the container from the instance of Visual Studio connecting to it. These ports are opened by snapshot module. This is in addition to the standard ports for container (<b>80 and 443</b>). In addition, running the container on a private network could prevent communication over these ports. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
+Remote Debugging requires connectivity over ports <b>for VS 2022 4026 and for VS 2019 4024</b> to the container from the instance of Visual Studio connecting to it. These ports are opened internally by snapshot module and the output is compiled to the storage account. Visual Studio needs to download the files from the storage account. If necessary Azure has pre-configured VM images with Visual Studio installed and can be used from within the network to remote debug your application. 
 
-To create snapshots, the container module must be included in the docker file to send snapshots to the appropriate storage account. In this example this module is included for you in the Dockerfile on lines ~4 - ~33. Other [snapshot tools for other .NET versions are located at this link](https://github.com/Microsoft/vssnapshotdebugger-docker). The storage account for the snapshot must be contained within the same location as the AKS Cluster. You must also have permissions to create and manage containers on that storage account. This can be created via Visual Studio or the include bicep file. 
+To create snapshots, the container module must be included in the docker file to send snapshots to the appropriate storage account. In this example this module is included for you in the Dockerfile on lines ~4 - ~33 and is configured for .NET 6. Other [snapshot tools for different .NET versions are located at this link](https://github.com/Microsoft/vssnapshotdebugger-docker). The correct module must be added to for the correct .NET version. The storage account for the snapshot must be contained within the same location as the AKS Cluster. You must also have permissions to create and manage containers on that storage account. This can be created via Visual Studio or the include bicep file. 
 
 This example uses an open ASP.NET Core API container. There are no network protections in this example. In this example the dockerfile and deployment specification exposes all the necessary debug ports and includes the necessary modules.
 
 ## Setup 
-An Azure Kubernetes Cluster Service (AKS), an Azure Container Registry (ACR) and Azure Storage account are created in this tutorial. To reduce cost the AKS instance can be stopped when not in use to reduce cost.
-
-### Manual
+An Azure Kubernetes Cluster Service (AKS), an Azure Container Registry (ACR) and Azure Storage account are created in this tutorial. To reduce cost the AKS instance can be stopped/deleted when not in use to reduce cost.
 
 1. Create a resource group for deployment. This name will be reused in the next several steps.
 1. Download this registry.
