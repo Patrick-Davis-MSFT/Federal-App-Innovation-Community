@@ -54,7 +54,7 @@ An Azure Kubernetes Cluster Service (AKS), an Azure Container Registry (ACR) and
         `az account set --subscription [Subscription ID]`
 1. Run the bicep command to create the necessary resources. Note the default D1 App Service plan will incur some cost. 
     `az deployment group create -g [ResourceGroup] --template-file '.\infrastructure\template.bicep' --parameters '.\infrastructure\parameters.json'`
-1. [1]Build and Deploy to Local Docker. Similar steps can be performed using the docker desktop UI.
+1. [1]Build and Deploy to Local Docker. Similar steps can be performed using the docker desktop UI. Run docker locally during these steps.
     1. Create the docker image 
         
         ```[ps]
